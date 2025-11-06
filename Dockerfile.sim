@@ -1,0 +1,28 @@
+FROM ros:foxy-ros-base-focal
+ENV DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC ROS_DISTRO=foxy
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+  build-essential cmake git curl python3-pip \
+  python3-colcon-common-extensions python3-vcstool \
+  ros-foxy-rosbridge-server ros-foxy-tf2-ros ros-foxy-image-transport \
+  ros-foxy-cv-bridge ros-foxy-diagnostic-updater \
+  ros-foxy-geometry-msgs ros-foxy-nav-msgs \
+  ros-foxy-image-tools \            # cam2image (synthetische Kamera)
+  ros-foxy-image-publisher \        # Bilddatei als Topic publizieren
+  ros-foxy-pointcloud-to-laserscan \# nützlich für Tests
+  ros-foxy-ros2bag \                # ros2 bag play/record
+  libopencv-dev nano less && \
+  rm -rf /var/lib/apt/lists/*
+
+RUN mkdir -p /root/ros2_ws/src
+WORKDIR /root/ros2_ws
+COPY sources.sim-core.repos /root/ros2_ws/sources.repos
+
+RUN . /opt/ros/${ROS_DISTRO}/setup.sh && \
+    vcs import src < sources.repos || true && \
+    rosdep update && \
+    rosdep install --from-paths src --ignore-src -y --rosdistro ${ROS_DISTRO} || true && \
+    colcon build --symlink-install || true
+
+RUN echo "source /opt/ros/${ROS_DISTRO}/setup.bash" >> /root/.bashrc && \
+    echo "source /root/ros2_ws/install/setup.bash" >> /root/.bashrc

@@ -1,0 +1,34 @@
+repositories:
+  diagnostics:
+    type: git
+    url: https://github.com/ros/diagnostics.git
+    version: foxy
+  image_common:
+    type: git
+    url: https://github.com/ros-perception/image_common.git
+    version: foxy
+  message_filters:
+    type: git
+    url: https://github.com/ros2/message_filters.git
+    version: foxy
+  pluginlib:
+    type: git
+    url: https://github.com/ros/pluginlib.git
+    version: foxy
+  rosidl_defaults:
+    type: git
+    url: https://github.com/ros2/rosidl_defaults.git
+    version: foxy
+  vision_opencv:
+    type: git
+    url: https://github.com/ros-perception/vision_opencv.git
+    version: foxy
+  xacro:
+    type: git
+    url: https://github.com/ros/xacro.git
+    version: ros2
+  rosbridge_suite:
+    type: git
+    url: https://github.com/RobotWebTools/rosbridge_suite.git
+    version: ros2
+# Eure eigenen Pakete (z.B. safety_stop, my_robot_description) liegen im Host-Repo und werden reingemountet.
