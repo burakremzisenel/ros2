@@ -1,24 +1,20 @@
-version: "3.9"
-
 services:
-  # -----------------------------
-  # 1) SIM-ENTWICKLUNG (x86_64)
-  # -----------------------------
   ros2-sim:
     build:
       context: .
       dockerfile: Dockerfile.sim
     container_name: ros2-sim
+    user: "${UID:-1000}:${GID:-1000}"
     environment:
       ROS_DOMAIN_ID: "0"
       RMW_IMPLEMENTATION: "rmw_cyclonedds_cpp"
       LANG: "C.UTF-8"
       LC_ALL: "C.UTF-8"
-      DISPLAY: ${DISPLAY}               # Linux: GUI-Tools im Container (optional)
+      DISPLAY: ${DISPLAY}
     volumes:
-      - ./ros2_ws:/root/ros2_ws            # euer Workspace (Host<->Container)
-      - ./bags:/root/bags                  # optionale Rosbags
-      - /tmp/.X11-unix:/tmp/.X11-unix:rw   # Linux X11-Forwarding (optional); Webots runs natively on host
+      - ./ros2_ws:/root/ros2_ws
+      - ./bags:/root/bags
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
     network_mode: host
     ipc: host
     command: >
@@ -29,7 +25,6 @@ services:
         bash
       "
 
-  # Optionaler rosbridge (für Foxglove, macOS/Windows oder externe Tools)
   rosbridge:
     build:
       context: .
@@ -37,18 +32,17 @@ services:
     container_name: rosbridge
     depends_on:
       - ros2-sim
+    user: "${UID:-1000}:${GID:-1000}"
     environment:
       ROS_DOMAIN_ID: "0"
       RMW_IMPLEMENTATION: "rmw_cyclonedds_cpp"
       LANG: "C.UTF-8"
       LC_ALL: "C.UTF-8"
     volumes:
-      - ./ros2_ws:/root/ros2_ws            # euer Workspace (Host<->Container)
-      - ./bags:/root/bags                  # optionale Rosbags
-    # Unter Linux könnt ihr auch host network nutzen:
-    # network_mode: host
+      - ./ros2_ws:/root/ros2_ws
+      - ./bags:/root/bags
     ports:
-      - "8765:8765"                         # Foxglove/rosbridge WebSocket-Port
+      - "8765:8765"
     command: >
       bash -lc "
         source /opt/ros/foxy/setup.bash &&
@@ -57,3 +51,8 @@ services:
           port:=8765 address:=0.0.0.0
           use_compression:=false max_message_size:=104857600 fragment_size:=65536
       "
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8765 || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 5

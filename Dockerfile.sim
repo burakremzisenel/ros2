@@ -7,12 +7,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   ros-foxy-rosbridge-server ros-foxy-tf2-ros ros-foxy-image-transport \
   ros-foxy-cv-bridge ros-foxy-diagnostic-updater \
   ros-foxy-geometry-msgs ros-foxy-nav-msgs \
-  ros-foxy-image-tools \            # cam2image (synthetische Kamera)
-  ros-foxy-image-publisher \        # Bilddatei als Topic publizieren
-  ros-foxy-pointcloud-to-laserscan \# nützlich für Tests
-  ros-foxy-ros2bag \                # ros2 bag play/record
+  ros-foxy-image-tools \
+  ros-foxy-image-publisher \
+  ros-foxy-pointcloud-to-laserscan \
+  ros-foxy-rosbag2 \
+  ros-foxy-rosbag2-storage-default-plugins \
   libopencv-dev nano less && \
-  rm -rf /var/lib/apt/lists/*
+  apt-get clean && rm -rf /var/lib/apt/lists/*
 
 RUN mkdir -p /root/ros2_ws/src
 WORKDIR /root/ros2_ws
