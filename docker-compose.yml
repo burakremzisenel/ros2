@@ -1,21 +1,31 @@
-version: "3.8"
-
 services:
   ros2-sim:
     build:
       context: .
       dockerfile: Dockerfile.sim
     container_name: ros2-sim
-    network_mode: host
+    user: "${UID:-1000}:${GID:-1000}"
+    environment:
+      ROS_DOMAIN_ID: "0"
+      RMW_IMPLEMENTATION: "rmw_cyclonedds_cpp"
+      LANG: "C.UTF-8"
+      LC_ALL: "C.UTF-8"
+      DISPLAY: ${DISPLAY}
     volumes:
       - ./ros2_ws:/root/ros2_ws
       - ./bags:/root/bags
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
-    environment:
-      - LANG=C.UTF-8
-      - LC_ALL=C.UTF-8
-      - DISPLAY=${DISPLAY}
-    command: ["bash", "-lc", "source /opt/ros/foxy/setup.bash && cd /root/ros2_ws && colcon build --symlink-install || true && bash"]
+    network_mode: host
+    ipc: host
+    stdin_open: true       # damit der Container interaktiv ist (wie dein run.sh)
+    tty: true
+    command: >
+      bash -lc "
+        source /opt/ros/foxy/setup.bash &&
+        # falls im gemounteten Workspace schon gebaut wurde, kannst du das optional sourcen:
+        source /root/ros2_ws/install/setup.bash || true &&
+        exec bash
+      "
 
   rosbridge:
     build:
@@ -24,23 +34,27 @@ services:
     container_name: rosbridge
     depends_on:
       - ros2-sim
-    user: root
-    working_dir: /root
+    user: "${UID:-1000}:${GID:-1000}"
     environment:
-      - ROS_DOMAIN_ID=0
-      - RMW_IMPLEMENTATION=rmw_fastrtps_cpp
-      - LANG=C.UTF-8
-      - LC_ALL=C.UTF-8
-      - ROS_LOG_DIR=/tmp/ros_logs
+      ROS_DOMAIN_ID: "0"
+      RMW_IMPLEMENTATION: "rmw_cyclonedds_cpp"
+      LANG: "C.UTF-8"
+      LC_ALL: "C.UTF-8"
     volumes:
       - ./ros2_ws:/root/ros2_ws
-      - ./ros_logs:/tmp/ros_logs
+      - ./bags:/root/bags
     ports:
       - "8765:8765"
-    command: ["bash", "-lc", "source /opt/ros/foxy/setup.bash && source /root/ros2_ws/install/setup.bash || true && ros2 launch rosbridge_server rosbridge_websocket_launch.xml port:=8765 address:=0.0.0.0 use_compression:=false max_message_size:=104857600 fragment_size:=65536"]
+    command: >
+      bash -lc "
+        source /opt/ros/foxy/setup.bash &&
+        source /root/ros2_ws/install/setup.bash || true &&
+        ros2 launch rosbridge_server rosbridge_websocket_launch.xml
+          port:=8765 address:=0.0.0.0
+          use_compression:=false max_message_size:=104857600 fragment_size:=65536
+      "
     healthcheck:
       test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8765 || exit 1"]
       interval: 10s
       timeout: 3s
       retries: 5
-
