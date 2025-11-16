@@ -18,12 +18,11 @@ services:
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
     network_mode: host
     ipc: host
-    stdin_open: true       # damit der Container interaktiv ist (wie dein run.sh)
+    stdin_open: true       # interaktiv (wie dein run.sh)
     tty: true
     command: >
       bash -lc "
         source /opt/ros/foxy/setup.bash &&
-        # falls im gemounteten Workspace schon gebaut wurde, kannst du das optional sourcen:
         source /root/ros2_ws/install/setup.bash || true &&
         exec bash
       "
@@ -60,3 +59,26 @@ services:
       interval: 10s
       timeout: 3s
       retries: 5
+
+  # Nur für Burak / Jetson: RealSense-Hardware-Container (bionic-basiertes Image)
+  realsense-hw:
+    image: myrepo/myapp:jetson-fix-2025-10-27   # dein vorhandenes Jetson-Image
+    container_name: realsense-hw
+    profiles: ["hw"]                            # NUR starten, wenn Profil 'hw' aktiv ist
+    privileged: true
+    network_mode: host
+    ipc: host
+    environment:
+      ROS_DOMAIN_ID: "0"
+      LANG: "C.UTF-8"
+      LC_ALL: "C.UTF-8"
+    devices:
+      - /dev/bus/usb:/dev/bus/usb              # Zugriff auf T265 + D435i
+    volumes:
+      - ./ros2_ws:/root/ros2_ws                # gleicher Workspace wie im sim-Container
+    command: >
+      bash -lc "
+        source /opt/ros/foxy/setup.bash &&
+        source /root/ros2_ws/install/setup.bash || true &&
+        ros2 launch realsense2_camera dual_realsense.launch.py enable_pointcloud:=true
+      "
