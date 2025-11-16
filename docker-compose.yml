@@ -1,3 +1,5 @@
+version: "3.9"
+
 services:
   ros2-sim:
     build:
@@ -5,10 +7,10 @@ services:
       dockerfile: Dockerfile.sim
     container_name: ros2-sim
     user: "${UID:-1000}:${GID:-1000}"
+    network_mode: host
+    ipc: host
     environment:
       ROS_DOMAIN_ID: "0"
-      # RMW_IMPLEMENTATION weg oder auf rmw_fastrtps_cpp setzen:
-      # RMW_IMPLEMENTATION: "rmw_fastrtps_cpp"
       LANG: "C.UTF-8"
       LC_ALL: "C.UTF-8"
       DISPLAY: ${DISPLAY}
@@ -16,9 +18,7 @@ services:
       - ./ros2_ws:/root/ros2_ws
       - ./bags:/root/bags
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
-    network_mode: host
-    ipc: host
-    stdin_open: true       # interaktiv (wie dein run.sh)
+    stdin_open: true
     tty: true
     command: >
       bash -lc "
@@ -30,15 +30,12 @@ services:
   rosbridge:
     build:
       context: .
-      dockerfile: Dockerfile.sim
     container_name: rosbridge
     depends_on:
       - ros2-sim
-    user: root
+    network_mode: host
     environment:
       ROS_DOMAIN_ID: "0"
-      # wie oben: entweder weglassen oder FastRTPS:
-      # RMW_IMPLEMENTATION: "rmw_fastrtps_cpp"
       LANG: "C.UTF-8"
       LC_ALL: "C.UTF-8"
     volumes:
@@ -54,17 +51,11 @@ services:
           port:=8765 address:=0.0.0.0
           use_compression:=false max_message_size:=104857600 fragment_size:=65536
       "
-    healthcheck:
-      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8765 || exit 1"]
-      interval: 10s
-      timeout: 3s
-      retries: 5
 
-  # Nur für Burak / Jetson: RealSense-Hardware-Container (bionic-basiertes Image)
+  # Optional — nur Burak/Jetson benutzt dieses Service
   realsense-hw:
-    image: myrepo/myapp:jetson-fix-2025-10-27   # dein vorhandenes Jetson-Image
+    image: myrepo/myapp:jetson-fix-2025-10-27
     container_name: realsense-hw
-    profiles: ["hw"]                            # NUR starten, wenn Profil 'hw' aktiv ist
     privileged: true
     network_mode: host
     ipc: host
@@ -73,9 +64,9 @@ services:
       LANG: "C.UTF-8"
       LC_ALL: "C.UTF-8"
     devices:
-      - /dev/bus/usb:/dev/bus/usb              # Zugriff auf T265 + D435i
+      - /dev/bus/usb:/dev/bus/usb
     volumes:
-      - ./ros2_ws:/root/ros2_ws                # gleicher Workspace wie im sim-Container
+      - ./ros2_ws:/root/ros2_ws
     command: >
       bash -lc "
         source /opt/ros/foxy/setup.bash &&
