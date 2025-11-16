@@ -35,7 +35,7 @@ services:
     container_name: rosbridge
     depends_on:
       - ros2-sim
-    user: "${UID:-1000}:${GID:-1000}"
+    user: root
     environment:
       ROS_DOMAIN_ID: "0"
       # wie oben: entweder weglassen oder FastRTPS:
