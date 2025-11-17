@@ -29,10 +29,13 @@ services:
 
   rosbridge:
     build:
+      context: .
       dockerfile: Dockerfile.sim
     container_name: rosbridge
     depends_on:
       - ros2-sim
+    # user: root ist optional – schadet aber nicht, kannst du gerne setzen:
+    user: root
     network_mode: host
     environment:
       ROS_DOMAIN_ID: "0"
@@ -66,8 +69,10 @@ services:
       LC_ALL: "C.UTF-8"
     devices:
       - /dev/bus/usb:/dev/bus/usb
+    # WICHTIG: ros2_ws NICHT mounten, damit das im Image baked Workspace bleibt!
+    # Optional kannst du z.B. nur bags mounten, wenn du aufzeichnen willst:
     volumes:
-      - ./ros2_ws:/root/ros2_ws
+      - ./bags:/root/bags
     command: >
       bash -lc "
         source /opt/ros/foxy/setup.bash &&
