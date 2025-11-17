@@ -61,6 +61,7 @@ services:
     container_name: realsense-hw
     profiles: ["hw"]
     privileged: true
+    user: root
     network_mode: host
     ipc: host
     environment:
@@ -69,13 +70,31 @@ services:
       LC_ALL: "C.UTF-8"
     devices:
       - /dev/bus/usb:/dev/bus/usb
-    # WICHTIG: ros2_ws NICHT mounten, damit das im Image baked Workspace bleibt!
-    # Optional kannst du z.B. nur bags mounten, wenn du aufzeichnen willst:
     volumes:
+      # Dein Jetson-Workspace (über das Symlink ./ros2_ws -> /home/jetson/ros2_ws)
+      - ./ros2_ws:/root/ros2_ws
       - ./bags:/root/bags
     command: >
-      bash -lc "
-        source /opt/ros/foxy/setup.bash &&
-        source /root/ros2_ws/install/setup.bash || true &&
-        ros2 launch realsense2_camera dual_realsense.launch.py enable_pointcloud:=true
-      "
+      bash -lc '
+        # 1) ROS2-Basis Umgebung
+        if [ -f /opt/ros/foxy/install/setup.bash ]; then
+          echo "Sourcing /opt/ros/foxy/install/setup.bash";
+          source /opt/ros/foxy/install/setup.bash;
+        elif [ -f /opt/ros/foxy/setup.bash ]; then
+          echo "Sourcing /opt/ros/foxy/setup.bash";
+          source /opt/ros/foxy/setup.bash;
+        else
+          echo "WARN: Kein ROS foxy setup.bash gefunden";
+        fi
+
+        # 2) Dein Workspace-Overlay mit realsense2_camera
+        if [ -f /root/ros2_ws/install/setup.bash ]; then
+          echo "Sourcing /root/ros2_ws/install/setup.bash";
+          source /root/ros2_ws/install/setup.bash;
+        else
+          echo "WARN: /root/ros2_ws/install/setup.bash fehlt – realsense2_camera evtl. nicht gebaut";
+        fi
+
+        # 3) Jetzt erst realsense starten
+        exec ros2 launch realsense2_camera dual_realsense.launch.py enable_pointcloud:=true
+      '
