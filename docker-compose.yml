@@ -34,22 +34,18 @@ services:
     container_name: rosbridge
     depends_on:
       - ros2-sim
-    # user: root ist optional – schadet aber nicht, kannst du gerne setzen:
     user: root
     network_mode: host
     environment:
       ROS_DOMAIN_ID: "0"
       LANG: "C.UTF-8"
       LC_ALL: "C.UTF-8"
+    # Wichtig: KEIN ./ros2_ws hier mounten, nur bags wenn du willst
     volumes:
-      - ./ros2_ws:/root/ros2_ws
       - ./bags:/root/bags
-    ports:
-      - "8765:8765"
     command: >
       bash -lc "
         source /opt/ros/foxy/setup.bash &&
-        source /root/ros2_ws/install/setup.bash || true &&
         ros2 launch rosbridge_server rosbridge_websocket_launch.xml
           port:=8765 address:=0.0.0.0
           use_compression:=false max_message_size:=104857600 fragment_size:=65536
