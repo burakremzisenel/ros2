@@ -29,7 +29,7 @@ services:
 
   rosbridge:
     build:
-      context: .
+      dockerfile: Dockerfile.sim
     container_name: rosbridge
     depends_on:
       - ros2-sim
